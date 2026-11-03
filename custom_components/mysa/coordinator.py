@@ -25,7 +25,7 @@ class MysaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(seconds=60),
+            update_interval=timedelta(minutes=5),
         )
         self.client = client
         self.devices: dict[str, Any] = {}
