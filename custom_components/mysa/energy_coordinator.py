@@ -181,7 +181,7 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
         for hour_start, energy in sorted(hourly.items()):
             running_total += energy
             statistics.append(
-                StatisticData(start=hour_start, state=running_total, sum=running_total)
+                StatisticData(start=hour_start, state=energy, sum=running_total)
             )
         async_add_external_statistics(self.hass, metadata, statistics)
 
