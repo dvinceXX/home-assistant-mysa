@@ -1,0 +1,17 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Mysa",
+        "description": "Initial setup only. Cloud authentication validation will be added with the read-only API client.",
+        "data": {
+          "email": "Mysa account email",
+          "password": "Mysa account password"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "This Mysa account is already configured"
+    }
+  }
+}
