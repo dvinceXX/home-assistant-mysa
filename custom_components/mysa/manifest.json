@@ -7,6 +7,8 @@
   "config_flow": true,
   "documentation": "https://github.com/dvinceXX/home-assistant-mysa",
   "iot_class": "cloud_polling",
-  "requirements": [],
-  "version": "0.1.0"
+  "requirements": [
+    "mysa-client==0.2.1"
+  ],
+  "version": "0.2.0"
 }
