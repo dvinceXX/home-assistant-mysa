@@ -15,6 +15,7 @@ from .const import (
     PLATFORMS,
 )
 from .coordinator import MysaCoordinator
+from .energy_coordinator import MysaEnergyCoordinator
 
 type MysaConfigEntry = ConfigEntry
 
@@ -45,10 +46,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: MysaConfigEntry) -> bool
     coordinator = MysaCoordinator(hass, client)
     await coordinator.async_config_entry_first_refresh()
 
+    energy_coordinator = MysaEnergyCoordinator(
+        hass,
+        client,
+        coordinator.devices,
+        entry.entry_id,
+    )
+    await energy_coordinator.async_initialize()
+
     hass.data.setdefault(DOMAIN, {})
     hass.data[DOMAIN][entry.entry_id] = {
         "client": client,
         "coordinator": coordinator,
+        "energy_coordinator": energy_coordinator,
     }
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
