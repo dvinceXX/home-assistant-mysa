@@ -1,5 +1,6 @@
 """Tests for Mysa expanded energy parsing."""
 
+from datetime import date
 from zoneinfo import ZoneInfo
 
 from custom_components.mysa.energy import EnergyDay, parse_energy_history
@@ -110,7 +111,7 @@ def test_merge_preserves_previously_imported_buckets() -> None:
         }
     }
     fetched = EnergyDay(
-        day=__import__("datetime").date(2026, 10, 30),
+        day=date(2026, 10, 30),
         energy_kwh=0.68,
         buckets={"2026-10-30T04:30:00+00:00": 0.38},
     )
