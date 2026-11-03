@@ -30,11 +30,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: MysaConfigEntry) -> bool
 
     def save_refresh_token(token: str) -> None:
         """Persist refreshed Cognito token without logging it."""
-        hass.async_create_task(
-            hass.config_entries.async_update_entry(
-                entry,
-                data={**entry.data, CONF_REFRESH_TOKEN: token},
-            )
+        hass.config_entries.async_update_entry(
+            entry,
+            data={**entry.data, CONF_REFRESH_TOKEN: token},
         )
 
     client = create_client(
