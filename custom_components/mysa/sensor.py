@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime, time
-from zoneinfo import ZoneInfo
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -135,9 +135,7 @@ class MysaEnergySensor(CoordinatorEntity[MysaEnergyCoordinator], SensorEntity):
         device = coordinator.devices[device_id]
         is_total = energy_type == "total"
         self._attr_unique_id = f"{device_id}_energy_{energy_type}"
-        self._attr_name = (
-            "Total Energy" if is_total else "Energy Today"
-        )
+        self._attr_name = "Total Energy" if is_total else "Energy Today"
         self._attr_device_class = SensorDeviceClass.ENERGY
         self._attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
         self._attr_state_class = (
