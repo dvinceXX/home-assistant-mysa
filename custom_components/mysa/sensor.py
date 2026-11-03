@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import datetime, time
+from zoneinfo import ZoneInfo
 from typing import Any
 
 from homeassistant.components.sensor import (
@@ -16,6 +18,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import MysaCoordinator
@@ -140,7 +143,7 @@ class MysaEnergySensor(CoordinatorEntity[MysaEnergyCoordinator], SensorEntity):
         self._attr_state_class = (
             SensorStateClass.TOTAL_INCREASING
             if is_total
-            else SensorStateClass.MEASUREMENT
+            else SensorStateClass.TOTAL
         )
         self._attr_suggested_display_precision = 2
         self._attr_device_info = DeviceInfo(
@@ -149,6 +152,16 @@ class MysaEnergySensor(CoordinatorEntity[MysaEnergyCoordinator], SensorEntity):
             manufacturer="Mysa",
             model=device.model,
         )
+
+    @property
+    def last_reset(self) -> datetime | None:
+        """Return local midnight for the daily meter reset."""
+        if self._energy_type == "total":
+            return None
+        device = self.coordinator.devices[self._device_id]
+        timezone = ZoneInfo(device.time_zone or self.hass.config.time_zone)
+        today = dt_util.now(timezone).date()
+        return datetime.combine(today, time.min, tzinfo=timezone)
 
     @property
     def native_value(self) -> float | None:
