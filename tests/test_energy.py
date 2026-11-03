@@ -1,9 +1,9 @@
 """Tests for Mysa expanded energy parsing."""
 
-from datetime import UTC, datetime
 from zoneinfo import ZoneInfo
 
-from custom_components.mysa.energy import parse_energy_history
+from custom_components.mysa.energy import EnergyDay, parse_energy_history
+from custom_components.mysa.energy_coordinator import _hourly_energy, _merge_day
 
 
 def test_parse_daily_energy_and_buckets() -> None:
@@ -81,3 +81,41 @@ def test_ignore_invalid_or_unavailable_energy_values() -> None:
     ]
 
     assert parse_energy_history(payload, timezone) == {}
+
+def test_hourly_statistics_keep_dst_fall_back_hours_separate() -> None:
+    """Keep both UTC hours when the local clock repeats 01:00."""
+    timezone = ZoneInfo("America/Toronto")
+    days = {
+        "2026-11-01": {
+            "energy_kwh": 0.51,
+            "buckets": {
+                "2026-11-01T05:00:00+00:00": 0.25,
+                "2026-11-01T06:00:00+00:00": 0.26,
+            },
+        }
+    }
+
+    hourly = _hourly_energy(days, timezone)
+
+    assert len(hourly) == 2
+    assert sum(hourly.values()) == 0.51
+
+
+def test_merge_preserves_previously_imported_buckets() -> None:
+    """A partial refresh must not discard intervals already stored."""
+    saved_days = {
+        "2026-10-30": {
+            "energy_kwh": 0.3,
+            "buckets": {"2026-10-30T04:00:00+00:00": 0.3},
+        }
+    }
+    fetched = EnergyDay(
+        day=__import__("datetime").date(2026, 10, 30),
+        energy_kwh=0.68,
+        buckets={"2026-10-30T04:30:00+00:00": 0.38},
+    )
+
+    _merge_day(saved_days, "2026-10-30", fetched)
+
+    assert saved_days["2026-10-30"]["energy_kwh"] == 0.68
+    assert len(saved_days["2026-10-30"]["buckets"]) == 2
