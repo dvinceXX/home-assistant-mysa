@@ -187,7 +187,9 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
             unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         )
 
-        import_start_utc = import_start.astimezone(UTC)
+        import_start_utc = import_start.astimezone(UTC).replace(
+            minute=0, second=0, microsecond=0
+        )
         running_total = sum(
             energy for hour_start, energy in hourly.items()
             if hour_start < import_start_utc
@@ -283,7 +285,9 @@ def _hourly_energy(
             continue
         local_date = date.fromisoformat(day_key)
         local_hour = datetime.combine(local_date, time(23), tzinfo=timezone)
-        hour_start = local_hour.astimezone(UTC)
+        hour_start = local_hour.astimezone(UTC).replace(
+            minute=0, second=0, microsecond=0
+        )
         hourly[hour_start] = hourly.get(hour_start, 0.0) + energy
 
     return hourly
