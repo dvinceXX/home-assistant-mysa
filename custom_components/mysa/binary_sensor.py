@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from homeassistant.components.binary_sensor import (
+    BinarySensorDeviceClass,
     BinarySensorEntity,
     BinarySensorEntityDescription,
 )
@@ -20,7 +21,7 @@ from .coordinator import MysaCoordinator
 DESCRIPTION = BinarySensorEntityDescription(
     key="connected",
     name="Connected",
-    device_class="connectivity",
+    device_class=BinarySensorDeviceClass.CONNECTIVITY,
 )
 
 
