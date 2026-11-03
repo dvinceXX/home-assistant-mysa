@@ -2,22 +2,20 @@
 
 A custom Home Assistant integration for monitoring Mysa thermostats through the Mysa cloud API.
 
-> **Development status:** Early development. Account authentication and live monitoring sensors are implemented. Historical energy import is still under development; do not install this version expecting Energy dashboard history.
+> **Development status:** Early development. Read-only monitoring and expanded energy history are implemented. The cloud API is unofficial and has only been validated against selected hardware.
 
-## Current features
+## Features
 
 - Mysa account sign-in and account/device discovery.
-- Secure refresh-token handling with automatic re-authentication using the stored account credentials when needed.
-- Read-only room temperature, heat setpoint, and connectivity entities.
-- Five-minute polling through Home Assistant's shared HTTP session.
-- HACS-compatible custom integration structure and initial automated tests.
+- Room temperature, heat setpoint, and connectivity entities.
+- Daily energy (kWh) and cumulative energy sensors for each thermostat.
+- Historical energy import into Home Assistant long-term statistics, including hourly buckets for the Energy dashboard.
+- Persistent local history with a 365-day initial backfill and a rolling 30-day refresh to repair partial days and recover after downtime.
+- Five-minute live-state polling and 12-hour energy-history polling.
 
-## Design goals
+## HomeKit and control
 
-- Keep HomeKit as the primary thermostat control path.
-- This integration is monitoring-only. It does not send setpoint, mode, schedule, or other thermostat control commands.
-- Add verified daily energy (kWh), cumulative energy, and historical energy import.
-- Import missing history without treating a partially imported day as complete.
+Keep HomeKit as the primary thermostat control path. This integration is monitoring-only: it does not send setpoint, mode, schedule, or other thermostat control commands.
 
 ## Installation
 
@@ -25,9 +23,13 @@ This integration is under development and is not yet recommended for production 
 
 ## Configuration
 
-Add the **Mysa** integration in Home Assistant and enter your Mysa account email and password. Authentication is validated during setup. Credentials and the Cognito refresh token are stored in the Home Assistant config entry; they are never written to the integration logs.
+Add the **Mysa** integration in Home Assistant and enter your Mysa account email and password. Authentication is validated during setup. Credentials and the Cognito refresh token are stored in the Home Assistant config entry and are not written to integration logs.
 
-Some Mysa accounts may require an additional authentication challenge (for example, MFA or a new-password challenge). Those flows are not supported yet.
+## Energy data notes
+
+Energy uses the expanded Mysa usage API's `k` metric. It does not estimate energy from heating runtime or assumed heater wattage. Mysa's API is undocumented, and energy availability may differ by thermostat model. If a device does not return `k`, the integration leaves its energy sensors unavailable rather than inventing a value.
+
+The integration stores the daily history locally and imports external hourly statistics with stable statistic IDs. Re-importing the same time periods updates existing statistics instead of creating duplicates.
 
 ## Privacy and security
 
