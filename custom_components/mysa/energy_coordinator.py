@@ -81,7 +81,7 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
             except (ZoneInfoNotFoundError, TypeError):
                 _LOGGER.warning(
                     "Invalid timezone for Mysa device %s; using Home Assistant timezone",
-                    device.name or device_id,
+                    device.name or "unnamed thermostat",
                 )
                 timezone_name = self.hass.config.time_zone
                 timezone = ZoneInfo(timezone_name)
