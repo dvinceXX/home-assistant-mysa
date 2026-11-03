@@ -125,22 +125,30 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
                     err,
                 )
 
-            cumulative = sum(
-                _valid_energy_day(item)
+            valid_energy_days = [
+                item
                 for item in saved_days.values()
                 if isinstance(item, dict)
-            )
-            # Preserve a monotonic meter value if Mysa later revises an old day
-            # downward. Newly recovered missing days can still increase it.
-            cumulative = max(
-                float(device_history.get("cumulative_kwh", 0.0)),
-                cumulative,
-            )
-            device_history["cumulative_kwh"] = cumulative
+                and not isinstance(item.get("energy_kwh"), bool)
+                and isinstance(item.get("energy_kwh"), int | float)
+            ]
+            cumulative: float | None = None
+            if valid_energy_days:
+                cumulative = sum(_valid_energy_day(item) for item in valid_energy_days)
+                # Preserve a monotonic meter value if Mysa later revises an old
+                # day downward. Newly recovered missing days can still increase it.
+                cumulative = max(
+                    float(device_history.get("cumulative_kwh", 0.0)),
+                    cumulative,
+                )
+                device_history["cumulative_kwh"] = cumulative
+
             today_record = saved_days.get(today.isoformat(), {})
             today_kwh = (
                 _valid_energy_day(today_record)
                 if isinstance(today_record, dict)
+                and not isinstance(today_record.get("energy_kwh"), bool)
+                and isinstance(today_record.get("energy_kwh"), int | float)
                 else None
             )
             result[device_id] = {
