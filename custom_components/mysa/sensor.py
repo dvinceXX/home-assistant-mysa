@@ -5,7 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import datetime, time
 from typing import Any
-from zoneinfo import ZoneInfo
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from homeassistant.components.sensor import (
     SensorDeviceClass,
@@ -157,7 +157,10 @@ class MysaEnergySensor(CoordinatorEntity[MysaEnergyCoordinator], SensorEntity):
         if self._energy_type == "total":
             return None
         device = self.coordinator.devices[self._device_id]
-        timezone = ZoneInfo(device.time_zone or self.hass.config.time_zone)
+        try:
+            timezone = ZoneInfo(device.time_zone or self.hass.config.time_zone)
+        except (ZoneInfoNotFoundError, TypeError):
+            timezone = ZoneInfo(self.hass.config.time_zone)
         today = dt_util.now(timezone).date()
         return datetime.combine(today, time.min, tzinfo=timezone)
 
