@@ -3,12 +3,19 @@
     "step": {
       "user": {
         "title": "Connect to Mysa",
-        "description": "Initial setup only. Cloud authentication validation will be added with the read-only API client.",
+        "description": "Sign in to your Mysa account. This integration only reads thermostat data and does not change settings.",
         "data": {
           "email": "Mysa account email",
           "password": "Mysa account password"
         }
       }
+    },
+    "error": {
+      "invalid_auth": "The email or password was not accepted.",
+      "unsupported_auth": "Mysa requested an authentication step that is not supported yet (such as MFA).",
+      "rate_limited": "Mysa is temporarily rate limiting sign-in. Try again later.",
+      "cannot_connect": "Unable to connect or authenticate with Mysa.",
+      "unknown": "Unexpected error. Check the Home Assistant logs."
     },
     "abort": {
       "already_configured": "This Mysa account is already configured"
