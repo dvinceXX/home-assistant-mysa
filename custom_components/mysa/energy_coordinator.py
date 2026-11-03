@@ -155,7 +155,10 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
                 "today_kwh": today_kwh,
                 "total_kwh": cumulative,
             }
-            self._import_device_statistics(device_id, device, saved_days, timezone)
+            import_start = datetime.combine(start_date, time.min, tzinfo=timezone)
+            self._import_device_statistics(
+                device_id, device, saved_days, timezone, import_start
+            )
 
         await self.store.async_save({"devices": self.history})
         return result
@@ -166,8 +169,9 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
         device: Any,
         saved_days: dict[str, Any],
         timezone: ZoneInfo,
+        import_start: datetime,
     ) -> None:
-        """Import hourly external statistics using stable statistic IDs."""
+        """Import recent hourly statistics, including corrected partial days."""
         hourly = _hourly_energy(saved_days, timezone)
         if not hourly:
             return
@@ -184,9 +188,15 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
             unit_of_measurement=UnitOfEnergy.KILO_WATT_HOUR,
         )
 
-        running_total = 0.0
+        import_start_utc = import_start.astimezone(UTC)
+        running_total = sum(
+            energy for hour_start, energy in hourly.items()
+            if hour_start < import_start_utc
+        )
         statistics: list[StatisticData] = []
         for hour_start, energy in sorted(hourly.items()):
+            if hour_start < import_start_utc:
+                continue
             running_total += energy
             statistics.append(
                 StatisticData(start=hour_start, state=energy, sum=running_total)
