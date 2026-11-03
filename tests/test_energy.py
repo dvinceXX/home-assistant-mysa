@@ -83,6 +83,7 @@ def test_ignore_invalid_or_unavailable_energy_values() -> None:
 
     assert parse_energy_history(payload, timezone) == {}
 
+
 def test_hourly_statistics_keep_dst_fall_back_hours_separate() -> None:
     """Keep both UTC hours when the local clock repeats 01:00."""
     timezone = ZoneInfo("America/Toronto")
