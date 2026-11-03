@@ -147,7 +147,7 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
                 "today_kwh": today_kwh,
                 "total_kwh": cumulative,
             }
-            self._import_device_statistics(device_id, device, saved_days)
+            self._import_device_statistics(device_id, device, saved_days, timezone)
 
         await self.store.async_save({"devices": self.history})
         return result
@@ -157,9 +157,10 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
         device_id: str,
         device: Any,
         saved_days: dict[str, Any],
+        timezone: ZoneInfo,
     ) -> None:
         """Import hourly external statistics using stable statistic IDs."""
-        hourly = _hourly_energy(saved_days)
+        hourly = _hourly_energy(saved_days, timezone)
         if not hourly:
             return
 
@@ -180,11 +181,7 @@ class MysaEnergyCoordinator(DataUpdateCoordinator[dict[str, dict[str, float | No
         for hour_start, energy in sorted(hourly.items()):
             running_total += energy
             statistics.append(
-                StatisticData(
-                    start=hour_start,
-                    state=running_total,
-                    sum=running_total,
-                )
+                StatisticData(start=hour_start, state=running_total, sum=running_total)
             )
         async_add_external_statistics(self.hass, metadata, statistics)
 
@@ -224,10 +221,12 @@ def _merge_day(
     }
 
 
-def _hourly_energy(saved_days: dict[str, Any]) -> dict[datetime, float]:
+def _hourly_energy(
+    saved_days: dict[str, Any], timezone: ZoneInfo
+) -> dict[datetime, float]:
     """Group 30-minute kWh buckets into UTC hourly consumption."""
     hourly: dict[datetime, float] = {}
-    for day_key, day_record in saved_days.items():
+    for day_record in saved_days.values():
         if not isinstance(day_record, dict):
             continue
         buckets = day_record.get("buckets")
@@ -248,29 +247,26 @@ def _hourly_energy(saved_days: dict[str, Any]) -> dict[datetime, float]:
             bucket_total += energy
             day_hours.append(hour_start)
 
-        # Reconcile minor bucket rounding differences against the day's
-        # authoritative summary without inventing a separate daily reading.
+        # Reconcile bucket rounding differences against the daily summary.
         daily_total = _valid_energy_day(day_record)
         if day_hours and abs(daily_total - bucket_total) > 0.0001:
             last_hour = max(day_hours)
             adjustment = daily_total - bucket_total
             hourly[last_hour] = max(0.0, hourly.get(last_hour, 0.0) + adjustment)
 
-    # If the API returned a day summary but no energy buckets, retain the daily
-    # total as a single hourly value at the end of that local day.
+    # If only a daily summary is available, place it at the local day's final
+    # hour. This keeps the correct daily total without inventing a profile.
     for day_key, day_record in saved_days.items():
-        if not isinstance(day_record, dict):
-            continue
-        if day_record.get("buckets"):
+        if not isinstance(day_record, dict) or day_record.get("buckets"):
             continue
         if not _valid_date_key(day_key):
             continue
         energy = _valid_energy_day(day_record)
         if energy <= 0:
             continue
-        # UTC end-of-day marker avoids assuming a fixed UTC offset across DST.
         local_date = date.fromisoformat(day_key)
-        hour_start = datetime.combine(local_date, time(23), tzinfo=UTC)
+        local_hour = datetime.combine(local_date, time(23), tzinfo=timezone)
+        hour_start = local_hour.astimezone(UTC)
         hourly[hour_start] = hourly.get(hour_start, 0.0) + energy
 
     return hourly
