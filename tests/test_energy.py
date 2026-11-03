@@ -3,6 +3,8 @@
 from datetime import date
 from zoneinfo import ZoneInfo
 
+import pytest
+
 from custom_components.mysa.energy import EnergyDay, parse_energy_history
 from custom_components.mysa.energy_coordinator import _hourly_energy, _merge_day
 
@@ -24,7 +26,7 @@ def test_parse_daily_energy_and_buckets() -> None:
     result = parse_energy_history(payload, timezone)
 
     assert result["2026-10-30"].energy_kwh == 0.68
-    assert sum(result["2026-10-30"].buckets.values()) == 0.68
+    assert sum(result["2026-10-30"].buckets.values()) == pytest.approx(0.68)
 
 
 def test_parse_bucket_energy_when_daily_summary_is_missing() -> None:
@@ -100,7 +102,7 @@ def test_hourly_statistics_keep_dst_fall_back_hours_separate() -> None:
     hourly = _hourly_energy(days, timezone)
 
     assert len(hourly) == 2
-    assert sum(hourly.values()) == 0.51
+    assert sum(hourly.values()) == pytest.approx(0.51)
 
 
 def test_merge_preserves_previously_imported_buckets() -> None:
