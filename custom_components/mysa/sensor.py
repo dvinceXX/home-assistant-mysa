@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorEntityDescription
-from homeassistant.const import PERCENTAGE, UnitOfTemperature
+from homeassistant.const import UnitOfTemperature
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -35,12 +35,6 @@ SENSORS: tuple[MysaSensorDescription, ...] = (
         name="Heat Setpoint",
         native_unit_of_measurement=UnitOfTemperature.CELSIUS,
         value_fn=lambda state: state.heat_setpoint,
-    ),
-    MysaSensorDescription(
-        key="duty_cycle",
-        name="Heating Duty Cycle",
-        native_unit_of_measurement=PERCENTAGE,
-        value_fn=lambda state: state.duty_cycle,
     ),
 )
 
