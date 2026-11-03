@@ -1,29 +1,38 @@
 # Mysa for Home Assistant
 
-A custom Home Assistant integration for monitoring Mysa V2 thermostats and importing energy history.
+A custom Home Assistant integration for monitoring Mysa thermostats through the Mysa cloud API.
 
-> **Development status:** Initial project scaffold. Cloud authentication, live telemetry, and historical energy import are not implemented yet.
+> **Development status:** Early development. Account authentication and live monitoring sensors are implemented. Historical energy import is still under development; do not install this version expecting Energy dashboard history.
+
+## Current features
+
+- Mysa account sign-in and account/device discovery.
+- Secure refresh-token handling with automatic re-authentication using the stored account credentials when needed.
+- Read-only room temperature, heat setpoint, and connectivity entities.
+- Five-minute polling through Home Assistant's shared HTTP session.
+- HACS-compatible custom integration structure and initial automated tests.
 
 ## Design goals
 
 - Keep HomeKit as the primary thermostat control path.
-- Read-only monitoring through the Mysa cloud API; no setpoint, mode, or other control commands.
-- Daily energy (kWh), cumulative energy, temperature, setpoint, heating runtime, and connectivity sensors.
-- Historical energy import that can fill missing dates and intervals without discarding partial days.
-- HACS-compatible packaging, tests, and Home Assistant validation.
+- This integration is monitoring-only. It does not send setpoint, mode, schedule, or other thermostat control commands.
+- Add verified daily energy (kWh), cumulative energy, and historical energy import.
+- Import missing history without treating a partially imported day as complete.
 
 ## Installation
 
-This integration is under development and is not ready for installation.
+This integration is under development and is not yet recommended for production use.
 
 ## Configuration
 
-Configuration and authentication flow will be documented when the read-only API client is implemented.
+Add the **Mysa** integration in Home Assistant and enter your Mysa account email and password. Authentication is validated during setup. Credentials and the Cognito refresh token are stored in the Home Assistant config entry; they are never written to the integration logs.
+
+Some Mysa accounts may require an additional authentication challenge (for example, MFA or a new-password challenge). Those flows are not supported yet.
 
 ## Privacy and security
 
-Credentials will be handled through Home Assistant's config-entry storage. Never include passwords, access tokens, or full device identifiers in diagnostic reports or issue submissions.
+The cloud API is unofficial and undocumented. Use it at your own risk. Never include passwords, access tokens, or full device identifiers in diagnostic reports or issue submissions.
 
 ## Development
 
-The integration targets current Home Assistant Core and follows the standard custom integration layout under `custom_components/mysa`.
+The integration lives under `custom_components/mysa`. Tests run with pytest and the Home Assistant custom-component test package.
