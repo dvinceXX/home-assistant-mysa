@@ -1,0 +1,12 @@
+{
+  "domain": "mysa",
+  "name": "Mysa",
+  "codeowners": [
+    "@dvinceXX"
+  ],
+  "config_flow": true,
+  "documentation": "https://github.com/dvinceXX/home-assistant-mysa",
+  "iot_class": "cloud_polling",
+  "requirements": [],
+  "version": "0.1.0"
+}
