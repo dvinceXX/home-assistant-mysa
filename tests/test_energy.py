@@ -5,6 +5,8 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from custom_components.mysa.energy import async_get_expanded_energy
+
 from custom_components.mysa.energy import EnergyDay, parse_energy_history
 from custom_components.mysa.energy_coordinator import _hourly_energy, _merge_day
 
@@ -142,3 +144,57 @@ def test_merge_preserves_previously_imported_buckets() -> None:
 
     assert saved_days["2026-10-30"]["energy_kwh"] == 0.68
     assert len(saved_days["2026-10-30"]["buckets"]) == 2
+
+
+@pytest.mark.asyncio
+async def test_expanded_energy_requests_history_in_four_day_chunks() -> None:
+    """Split large history windows and combine both supported response shapes."""
+    from datetime import datetime
+    from unittest.mock import AsyncMock
+
+    class FakeClient:
+        _request = AsyncMock(
+            side_effect=[
+                [{"T": "2026-10-01T04:00:00+00:00"}],
+                {"T": "2026-10-05T04:00:00+00:00"},
+                [{"T": "2026-10-09T04:00:00+00:00"}],
+            ]
+        )
+
+    timezone = ZoneInfo("America/Toronto")
+    start = datetime(2026, 10, 1, tzinfo=timezone)
+    end = datetime(2026, 10, 10, tzinfo=timezone)
+    client = FakeClient()
+
+    result = await async_get_expanded_energy(
+        client, "device-1", "America/Toronto", start, end
+    )
+
+    assert len(client._request.await_args_list) == 3
+    request_bodies = [
+        call.kwargs["body"] for call in client._request.await_args_list
+    ]
+    assert [
+        body["end"] - body["start"] for body in request_bodies
+    ] == [4 * 86400, 4 * 86400, 86400]
+    assert len(result) == 3
+    assert result[1]["T"] == "2026-10-05T04:00:00+00:00"
+
+
+@pytest.mark.asyncio
+async def test_expanded_energy_empty_window_makes_no_request() -> None:
+    """An empty or reversed date window should not call the Mysa API."""
+    from datetime import datetime
+    from unittest.mock import AsyncMock
+
+    class FakeClient:
+        _request = AsyncMock()
+
+    timezone = ZoneInfo("America/Toronto")
+    instant = datetime(2026, 10, 1, tzinfo=timezone)
+    client = FakeClient()
+
+    assert await async_get_expanded_energy(
+        client, "device-1", "America/Toronto", instant, instant
+    ) == []
+    client._request.assert_not_awaited()
