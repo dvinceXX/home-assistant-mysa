@@ -29,6 +29,25 @@ def test_parse_daily_energy_and_buckets() -> None:
     assert sum(result["2026-10-30"].buckets.values()) == pytest.approx(0.68)
 
 
+
+def test_parse_single_day_object_response() -> None:
+    """The live expanded telemetry endpoint may return one day as an object."""
+    timezone = ZoneInfo("America/Toronto")
+    payload = {
+        "T": "2026-10-30T04:00:00+00:00",
+        "summary": {"a": {"k": 0.68}},
+        "aggregatedReadings": [
+            {"T": "2026-10-30T04:00:00+00:00", "a": {"k": 0.30}},
+            {"T": "2026-10-30T04:30:00+00:00", "a": {"k": 0.38}},
+        ],
+        "windowEnergyTotal": 0.68,
+    }
+
+    result = parse_energy_history(payload, timezone)
+
+    assert result["2026-10-30"].energy_kwh == 0.68
+    assert len(result["2026-10-30"].buckets) == 2
+
 def test_parse_bucket_energy_when_daily_summary_is_missing() -> None:
     """Fall back to the sum of available kWh buckets."""
     timezone = ZoneInfo("America/Toronto")
