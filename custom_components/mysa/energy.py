@@ -10,10 +10,15 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import UTC, date, datetime
 import math
+from datetime import timedelta
 from typing import Any
 from zoneinfo import ZoneInfo
 
 from mysa_client.cloud import MysaClient
+
+
+# Four days is a known-working window for the expanded telemetry endpoint.
+ENERGY_HISTORY_CHUNK_DAYS = 4
 
 
 @dataclass(frozen=True, slots=True)
@@ -131,19 +136,36 @@ async def async_get_expanded_energy(
     temperature only. This uses its authenticated request transport for the
     documented read-only expanded usage request.
     """
-    body = {
-        "timezone": timezone,
-        "start": int(start.timestamp()),
-        "end": int(end.timestamp()),
-        "summary": {
-            "oH1": "sum",
-            "k": "sum",
-            "t": "average",
-            "h": "average",
-            "n": "sum",
-        },
-        "aggregatedReadings": ["oH1", "k", "t", "h", "n"],
-    }
-    return await client._request(  # noqa: SLF001
-        "POST", f"/telemetry/usage/{device_id}", body=body
-    )
+    if end <= start:
+        return []
+
+    combined: list[Any] = []
+    cursor = start
+    while cursor < end:
+        chunk_end = min(
+            cursor + timedelta(days=ENERGY_HISTORY_CHUNK_DAYS),
+            end,
+        )
+        body = {
+            "timezone": timezone,
+            "start": int(cursor.timestamp()),
+            "end": int(chunk_end.timestamp()),
+            "summary": {
+                "oH1": "sum",
+                "k": "sum",
+                "t": "average",
+                "h": "average",
+                "n": "sum",
+            },
+            "aggregatedReadings": ["oH1", "k", "t", "h", "n"],
+        }
+        payload = await client._request(  # noqa: SLF001
+            "POST", f"/telemetry/usage/{device_id}", body=body
+        )
+        if isinstance(payload, list):
+            combined.extend(payload)
+        elif isinstance(payload, Mapping):
+            combined.append(payload)
+        cursor = chunk_end
+
+    return combined
