@@ -64,11 +64,18 @@ def parse_energy_history(
     The daily summary's `summary.a.k` is authoritative when present.
     Bucket values are retained for hourly Energy-dashboard statistics.
     """
-    if not isinstance(payload, list):
+    # The telemetry endpoint returns a single day object for some
+    # requests, while diagnostic/export paths may return a list of days.
+    # Accept both shapes; rejecting the object form silently drops all energy.
+    if isinstance(payload, Mapping):
+        raw_days = [payload]
+    elif isinstance(payload, list):
+        raw_days = payload
+    else:
         return {}
 
     days: dict[str, EnergyDay] = {}
-    for raw_day in payload:
+    for raw_day in raw_days:
         if not isinstance(raw_day, Mapping):
             continue
         day_start = _timestamp(raw_day.get("T"), timezone)
